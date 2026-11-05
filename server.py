@@ -39,6 +39,7 @@ INSTRUCTIONS = '''你是一位摄影构图教练，用简体中文给出具体�
 horizon 是真实海平面或可信的建筑水平参考；不能把山脊、坡面、树冠或斜屋顶当作水平线，无法确定时返回 null。
 angle 单位是度，图像中从左到右向下倾斜为正（限制 -20 到 20）；y 是水平参考在画面中心 x=0.5 处的高度。
 gaze 仅在人或动物视线、明确运动方向时判断 left/right；静物填 none，无法确认填 unknown。用户明确设置的方向优先。
+用户拍摄意图 user_intent：focus 突出主体；environment 表现环境，优先保留场景关系；symmetry 强调居中，避免强迫使用三分法；space 保留留白，避免一律收紧画面。建议应服务于用户意图。
 summary 用 1–2 句描述可见主体、位置、背景和空间关系，约 60 字。
 只给出两条下次拍摄可做的不同调整，每条 title 简短、body 包含可观察的问题、具体动作与理由。涵盖视线/留白/水平线或背景干扰，按照片实际内容选择。不要重复自动生成的裁剪建议。
 不要编造距离、焦距、步数、不可见场景、画外空间；机位建议用“尝试…，观察…是否…”表述，不能承诺移动后一定可见什么。不要为没有问题的照片强行找问题。'''
@@ -93,13 +94,16 @@ def analyze(payload):
     gaze = payload.get('gaze', 'unknown')
     if gaze not in ('left', 'right', 'none', 'unknown'):
         raise ValueError('视线方向无效。')
+    intent = payload.get('intent', 'focus')
+    if intent not in ('focus', 'environment', 'symmetry', 'space'):
+        raise ValueError('拍摄意图无效。')
     subject = payload.get('subject')
     if subject is not None and not valid_subject(subject):
         raise ValueError('主体范围无效。')
     key = os.environ.get('OPENAI_API_KEY', '').strip()
     if not key:
         return 503, {'error': '尚未配置 AI 密钥，当前可以使用本地构图辅助。'}
-    context = {'user_direction': gaze, 'user_subject_bounds': {k: subject[k] for k in ('x', 'y', 'w', 'h')} if subject else None}
+    context = {'user_intent': intent, 'user_direction': gaze, 'user_subject_bounds': {k: subject[k] for k in ('x', 'y', 'w', 'h')} if subject else None}
     body = {'model': MODEL, 'store': False, 'max_output_tokens': 2500, 'instructions': INSTRUCTIONS,
             'input': [{'role': 'user', 'content': [
                 {'type': 'input_text', 'text': '请分析这张照片。用户设置：' + json.dumps(context, ensure_ascii=False)},

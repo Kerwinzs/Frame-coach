@@ -33,6 +33,10 @@ class ServerTests(unittest.TestCase):
         p = self.payload(); p['subject'] = {'x': .8, 'y': 0, 'w': .5, 'h': .2}
         with self.assertRaises(ValueError): server.analyze(p)
 
+    def test_invalid_intent_is_rejected(self):
+        p = self.payload(); p['intent'] = 'invented'
+        with self.assertRaises(ValueError): server.analyze(p)
+
     def test_invalid_model_coordinates_are_not_used(self):
         data = result(); data['subject']['x'] = float('nan')
         with self.assertRaises(ValueError): server.validate_result(data)
@@ -45,11 +49,13 @@ class ServerTests(unittest.TestCase):
             captured.update(json.loads(request.data))
             return BytesIO(json.dumps({'status': 'completed', 'output': [{'type': 'message', 'content': [
                 {'type': 'output_text', 'text': json.dumps(result())}]}]}).encode())
-        p = self.payload(); p['gaze'] = 'left'; p['subject'] = {'x': .1, 'y': .2, 'w': .3, 'h': .4}
+        p = self.payload(); p['gaze'] = 'left'; p['intent'] = 'symmetry'; p['subject'] = {'x': .1, 'y': .2, 'w': .3, 'h': .4}
         with patch.dict(os.environ, {'OPENAI_API_KEY': 'test-only'}), patch('urllib.request.urlopen', reply):
             status, data = server.analyze(p)
         self.assertEqual(status, 200); self.assertEqual(data['gaze'], 'left')
         self.assertEqual(data['subject']['x'], .1)
+        context = json.loads(captured['input'][0]['content'][0]['text'].split('用户设置：', 1)[1])
+        self.assertEqual(context['user_intent'], 'symmetry')
         self.assertFalse(captured['store'])
         self.assertEqual(captured['input'][0]['content'][1]['type'], 'input_image')
         self.assertTrue(captured['text']['format']['strict'])
