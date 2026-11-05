@@ -1,0 +1,21 @@
+# Local credentials and environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python / Node development files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+node_modules/
+
+# OS / editor / local exports
+.DS_Store
+.idea/
+.vscode/
+*.log
+留白-建议裁剪*.jpg
