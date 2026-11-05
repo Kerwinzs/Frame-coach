@@ -22,10 +22,13 @@
 .intro-actions{display:flex;align-items:center;gap:20px}.intro-actions>a{white-space:nowrap}@media(max-width:700px){.intro-actions{flex-direction:column;align-items:stretch;gap:9px}.intro-actions>a{text-align:center}}@media(max-width:540px){.intro-actions{width:100%}}
 
 .aesthetic-ai-heading button:disabled{cursor:default}
+/* Photo evidence overlays */
+.palette-item{background:transparent;padding:0;border:1px solid transparent;border-radius:3px}.palette-item[aria-pressed="true"]{outline:2px solid var(--orange);outline-offset:3px}.direction-row{background:none;width:100%;padding:0;border-radius:3px}.direction-row[aria-pressed="true"]{color:var(--orange);font-weight:600}.direction-row[aria-pressed="true"] .direction-track i{background:var(--orange)}.aesthetic-card.is-evidence-active{border-color:#b2c09e;background:#f3f6ec}.evidence-actions{display:flex;flex-wrap:wrap;gap:7px 10px;margin:12px 0}.evidence-actions button{font-size:10px}.evidence-action[aria-pressed="true"]{color:var(--orange);text-decoration:underline;text-underline-offset:3px}.evidence-inspector{border:1px solid #dce3d2;border-radius:6px;background:#f6f8f0;margin:20px 0;padding:18px}.evidence-header{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:14px}.evidence-header .eyebrow{font-size:9px}.evidence-header h3{font-size:15px;font-weight:550;margin:5px 0 0}.evidence-header button:disabled{opacity:.35;cursor:default}.evidence-layout{display:grid;grid-template-columns:minmax(0,1.8fr) minmax(190px,1fr);gap:22px;align-items:center}.evidence-canvas-wrap{display:grid;place-items:center;background:#25322b;min-height:160px;border-radius:4px;overflow:hidden}#evidenceCanvas{width:auto;height:auto;max-width:100%;max-height:430px;display:block}.evidence-explanation h4{font-size:14px;font-weight:550;margin:12px 0 8px}.evidence-explanation p{font-size:11px;line-height:1.9;color:#7f8c74;margin:9px 0}.evidence-explanation .evidence-count{font-size:11px;color:#586e4b}.evidence-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:#718061;margin:14px 0}.evidence-legend span{display:flex;align-items:center;gap:5px}.evidence-legend i{height:9px;width:9px;border:1px solid #0002;border-radius:2px}.evidence-toggle{display:flex;align-items:center;gap:5px;cursor:pointer;color:#637655;font-size:11px}.evidence-toggle input{accent-color:var(--green)}.evidence-explanation .evidence-boundary{font-size:10px;color:#9aa28f;margin-top:16px}
+@media(max-width:800px){.evidence-layout{grid-template-columns:1fr}.evidence-explanation h4{margin-top:10px}.evidence-inspector{padding:13px}.evidence-layout{gap:15px}}
 </style>
 </head>
 <body>
-<header class="header"><a class="brand" href="./" aria-label="留白首页"><span class="brand-icon">⌗</span><strong>留白</strong><span class="brand-en">FRAME COACH</span></a><span class="header-note">看见画面，也看见下一种可能。</span><span class="version">LOCAL / 03</span></header>
+<header class="header"><a class="brand" href="./" aria-label="留白首页"><span class="brand-icon">⌗</span><strong>留白</strong><span class="brand-en">FRAME COACH</span></a><span class="header-note">看见画面，也看见下一种可能。</span><span class="version">LOCAL / 04</span></header>
 <main>
 <section class="intro"><div><div class="eyebrow">A LITTLE SPACE. A BETTER FRAME.</div><h1>让每一次取景，<span>更有想法。</span></h1><p>放入一张照片，练习构图，也看见色彩、光线与空间。</p></div><div class="intro-actions"><button id="uploadTop" class="primary"><span>＋</span> 选择你的照片</button><a class="text-button" href="#aestheticTitle">美学参考 ↓</a></div></section>
 <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" hidden>
@@ -42,9 +45,13 @@
 <aside class="coach" aria-label="构图建议"><div class="coach-heading"><div class="eyebrow">YOUR NEXT SHOT</div><h2>再拍一张，可以这样。</h2><p>先试一个调整，再决定是否保留。</p></div><div class="mode-line"><span id="modeBadge" class="mode-badge">本地构图辅助</span><span id="sourceLabel">示例已标注</span></div><div class="observation"><span class="small-label">画面观察</span><p id="summary"></p><span id="confidence" class="muted"></span></div><ol id="tips" class="tips"></ol><div class="ai-area"><button id="aiBtn" class="primary full">✦ 用 AI 再看一眼</button><p id="aiStatus">正在检查 AI 连接…</p><p class="privacy" id="privacy">本地模式下，照片仅在浏览器内处理。</p></div></aside>
 </div>
 <section class="aesthetics-module" aria-labelledby="aestheticTitle">
-<div class="aesthetic-header"><div><div class="eyebrow">LEARN TO SEE</div><h2 id="aestheticTitle">美学参考：看见画面的组织方式。</h2><p>从照片中的颜色、明暗和边缘出发，选择一个元素练习。</p></div><label for="aestheticRange">分析范围<select id="aestheticRange"><option value="crop">当前裁剪</option><option value="original">原图</option></select></label></div>
+<div class="aesthetic-header"><div><div class="eyebrow">LEARN TO SEE</div><h2 id="aestheticTitle">美学参考：看见画面的组织方式。</h2><p>点击观察或色块，在照片里核对依据，再选择一个元素练习。</p></div><label for="aestheticRange">分析范围<select id="aestheticRange"><option value="crop">当前裁剪</option><option value="original">原图</option></select></label></div>
 <div class="aesthetic-caption"><span class="mode-badge">本地特征分析</span><span id="aestheticScope" aria-live="polite">跟随当前裁剪</span><span>这些指标描述画面，不是审美评分。</span></div>
 <div id="aestheticCards" class="aesthetic-cards"></div><p id="aestheticComparison" class="aesthetic-comparison" aria-live="polite"></p>
+<section class="evidence-inspector" aria-label="照片中的观察依据">
+<div class="evidence-header"><div><span class="eyebrow">SEE THE EVIDENCE</span><h3>在照片里核对观察。</h3></div><button id="evidenceClear" class="text-button" disabled>清除高亮</button></div>
+<div class="evidence-layout"><div class="evidence-canvas-wrap"><canvas id="evidenceCanvas" role="img" aria-label="当前分析范围的照片，尚未选择高亮"></canvas></div><div class="evidence-explanation"><span id="evidenceScope" class="mode-badge"></span><h4 id="evidenceTitle">点击上方的色块或“查看照片依据”</h4><p id="evidenceDescription">在这里查看观察对应的实际区域。</p><div id="evidenceLegend" class="evidence-legend"></div><p id="evidenceCount" class="evidence-count" role="status" aria-live="polite"></p><label class="evidence-toggle"><input id="evidenceToggle" type="checkbox" checked disabled> 显示高亮</label><p class="evidence-boundary">标注基于缩小后的采样画面，仅供核对位置；导出的裁剪图不含这些高亮。</p></div></div>
+</section>
 <div class="reference-lab"><div class="reference-visual"><div id="referenceDiagram"></div><span>原理示意 · 不是照片识别结果</span></div><div class="reference-copy"><label for="referenceElement">选择一个美学元素深入观察</label><select id="referenceElement"><option value="color">色彩呼应</option><option value="light">明暗层次</option><option value="lines">线条节奏</option><option value="balance">视觉均衡</option><option value="space">简洁与留白</option></select><p id="referencePrinciple" class="reference-principle"></p><p><strong>怎么看</strong><span id="referenceObserve"></span></p><p><strong>下一次拍摄</strong><span id="referenceExercise"></span></p><p id="referenceBoundary" class="reference-boundary"></p></div></div>
 <div class="aesthetic-ai"><div class="aesthetic-ai-heading"><div><h3>AI 美学解读</h3><p>基于原图内容，补充可核对的依据与拍摄练习。</p></div><button id="aestheticAIButton" class="outline">✦ AI 解读美学元素</button></div><p id="aestheticAIEmpty" class="aesthetic-ai-empty"></p><div id="aestheticAIResults" class="ai-aesthetic-results"></div></div>
 <details class="aesthetic-method"><summary>这些参考从哪里来？有什么边界？</summary><p>本地计算包括主色聚类、近似亮度分布、边缘方向、左右平均亮度差和低纹理网格覆盖率。它们提供观察线索，不能完整感知情绪、叙事或个人审美。分析的是缩小后的画面，数值是近似值。</p><p>研究参考：<a href="https://arxiv.org/abs/1606.01621" target="_blank" rel="noopener">AADB 摄影属性研究</a>提供了按属性讨论审美的思路；<a href="https://research.google/pubs/nima-neural-image-assessment/" target="_blank" rel="noopener">NIMA</a>研究了人的评分分布。本项目未加载这两个研究的模型或数据集，本地规则和阈值没有经过审美数据集标定。</p><p>原理图为本项目绘制的教学示意。AI 仅在点击时发送原图的压缩版本；模型的把握程度是自报描述，不是经校准的准确率。</p></details>
@@ -212,7 +219,7 @@ function extractPalette(pixels, count=5) {
     const b=buckets.get(key)||{sum:[0,0,0],n:0};
     b.n++;for(let c=0;c<3;c++)b.sum[c]+=rgb[c];buckets.set(key,b);
   }
-  const bins=[...buckets.values()].map(b=>({rgb:b.sum.map(v=>v/b.n),n:b.n})).sort((a,b)=>b.n-a.n);
+  const bins=[...buckets.entries()].map(([key,b])=>({key,rgb:b.sum.map(v=>v/b.n),n:b.n})).sort((a,b)=>b.n-a.n);
   const centers=[bins[0].rgb];
   while(centers.length<Math.min(count,bins.length)) {
     let candidate=null,best=0;
@@ -229,17 +236,22 @@ function extractPalette(pixels, count=5) {
     for(const b of bins) {
       let nearest=0,best=Infinity;
       centers.forEach((c,i)=>{const d=colorDistance(c,b.rgb);if(d<best){best=d;nearest=i;}});
-      const group=clusters[nearest];group.n+=b.n;
+      b.cluster=nearest;const group=clusters[nearest];group.n+=b.n;
       for(let c=0;c<3;c++)group.sum[c]+=b.rgb[c]*b.n;
     }
     clusters.forEach((g,i)=>{if(g.n)centers[i]=g.sum.map(v=>v/g.n);});
   }
-  return clusters.map((g,i)=>({hex:toHex(centers[i]),share:g.n/pixels.length})).filter(c=>c.share>0).sort((a,b)=>b.share-a.share);
+  const sorted=clusters.map((g,i)=>({cluster:i,hex:toHex(centers[i]),share:g.n/pixels.length})).filter(c=>c.share>0).sort((a,b)=>b.share-a.share);
+  const order=new Map(sorted.map((c,i)=>[c.cluster,i]));
+  const bucketLabels=new Map(bins.map(b=>[b.key,order.get(b.cluster)]));
+  const labels=Uint8Array.from(pixels,rgb=>bucketLabels.get((rgb[0]>>4)*256+(rgb[1]>>4)*16+(rgb[2]>>4)));
+  return {palette:sorted.map(({hex,share})=>({hex,share})),labels};
 }
 
 function analyzeAesthetics(data,width,height) {
   if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||!data||data.length<width*height*4)throw new TypeError('Invalid image pixels');
   const n=width*height,light=new Float32Array(n),edges=new Float32Array(n),pixels=[];
+  const toneLabels=new Uint8Array(n),edgeLabels=new Uint8Array(n);
   const histogram=Array(16).fill(0),directions={horizontal:0,vertical:0,diagonal:0};
   let mean=0,saturation=0,bright=0,dark=0,left=0,right=0,leftN=0,rightN=0;
   for(let i=0;i<n;i++) {
@@ -247,7 +259,7 @@ function analyzeAesthetics(data,width,height) {
     const rgb=[0,1,2].map(c=>data[i*4+c]*alpha+255*(1-alpha));pixels.push(rgb);
     const y=(rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722)/255;
     light[i]=y;mean+=y;histogram[Math.min(15,Math.floor(y*16))]++;
-    if(y>=.85)bright++;if(y<=.15)dark++;
+    if(y>=.85){bright++;toneLabels[i]=1;}if(y<=.15){dark++;toneLabels[i]=2;}
     const max=Math.max(...rgb)/255,min=Math.min(...rgb)/255;
     saturation+=max===min?0:(max-min)/(1-Math.abs(max+min-1));
     if(i%width<width/2){left+=y;leftN++;}else{right+=y;rightN++;}
@@ -262,7 +274,8 @@ function analyzeAesthetics(data,width,height) {
     edgeCount++;energy+=mag;
     const angle=((Math.atan2(gy,gx)+Math.PI/2)%Math.PI+Math.PI)%Math.PI;
     const degrees=angle*180/Math.PI;
-    directions[degrees<22.5||degrees>=157.5?'horizontal':degrees>=67.5&&degrees<112.5?'vertical':'diagonal']+=mag;
+    const direction=degrees<22.5||degrees>=157.5?'horizontal':degrees>=67.5&&degrees<112.5?'vertical':'diagonal';
+    directions[direction]+=mag;edgeLabels[i]={horizontal:1,vertical:2,diagonal:3}[direction];
   }
   for(const key of Object.keys(directions))directions[key]=energy?directions[key]/energy:0;
   const grid=Array.from({length:64},()=>({sum:0,sq:0,edge:0,n:0}));
@@ -277,8 +290,10 @@ function analyzeAesthetics(data,width,height) {
   });
   const quantile=q=>{let total=0;for(let i=0;i<16;i++){total+=histogram[i];if(total>=n*q)return (i+.5)/16;}return 1;};
   const dominant=Object.entries(directions).sort((a,b)=>b[1]-a[1])[0];
+  const colors=extractPalette(pixels);
   return {
-    palette:extractPalette(pixels),meanLight:mean/n,saturation:saturation/n,
+    evidence:{width,height,paletteLabels:colors.labels,toneLabels,edgeLabels},
+    palette:colors.palette,meanLight:mean/n,saturation:saturation/n,
     brightShare:bright/n,darkShare:dark/n,tonalSpread:quantile(.9)-quantile(.1),
     histogram:histogram.map(v=>v/n),directions,
     dominantDirection:energy&&dominant[1]>.46?dominant[0]:null,
@@ -328,6 +343,27 @@ function describeAesthetics(m,intent='focus') {
       exercise:intent==='symmetry'?'结合中央线检查两侧形状和内容的呼应；亮度接近并不能证明对称。':intent==='space'?'看看低纹理区域是否帮助表达安静或延伸，再决定是否保留这片空间。':'先比较两侧内容，再决定保留均衡还是有意的不均衡。'},
   ];
 }
+
+// Labels are generated from the exact sampled pixels used by the measurement.
+// 0 means unselected; positive values identify the legend groups for rendering.
+function makeEvidenceMask(metrics,selection) {
+  const e=metrics.evidence,n=e.width*e.height,mask=new Uint8Array(n);
+  if(!selection)return {mask,count:0,width:e.width,height:e.height};
+  const edgeId={horizontal:1,vertical:2,diagonal:3};
+  for(let i=0;i<n;i++) {
+    const x=i%e.width,y=Math.floor(i/e.width);
+    if(selection.kind==='color'&&Number.isInteger(selection.index)&&selection.index>=0&&selection.index<metrics.palette.length)mask[i]=e.paletteLabels[i]===selection.index?1:0;
+    else if(selection.kind==='light') {
+      const v=e.toneLabels[i];
+      mask[i]=selection.tone==='both'||selection.tone==='bright'&&v===1||selection.tone==='dark'&&v===2?v:0;
+    } else if(selection.kind==='lines') {
+      const v=e.edgeLabels[i];mask[i]=selection.direction==='all'||v===edgeId[selection.direction]?v:0;
+    } else if(selection.kind==='balance')mask[i]=x<e.width/2?1:2;
+    else if(selection.kind==='quiet')mask[i]=metrics.textureGrid[Math.min(7,Math.floor(y/e.height*8))*8+Math.min(7,Math.floor(x/e.width*8))]?1:0;
+  }
+  let count=0;for(const v of mask)if(v)count++;
+  return {mask,count,width:e.width,height:e.height};
+}
 const aEl=(tag,className,text)=>{const el=document.createElement(tag);if(className)el.className=className;if(text!==undefined)el.textContent=text;return el;};
 const aPct=v=>Math.round(v*100);
 const aSvgNS='http://www.w3.org/2000/svg';
@@ -336,17 +372,28 @@ function aHistogram(m) {
   const svg=aSvgNode('svg',{viewBox:'0 0 240 60',role:'img','aria-label':'从暗到亮的像素分布'}),max=Math.max(...m.histogram,.001);
   m.histogram.forEach((v,i)=>svg.append(aSvgNode('rect',{x:i*15,y:58-v/max*53,width:12,height:Math.max(1,v/max*53),fill:`rgb(${50+i*11},${70+i*10},${57+i*10})`})));return svg;
 }
-function aDirections(m) {
+function aEvidenceButton(label,selection,onSelect,className='text-button evidence-action') {
+  const b=aEl('button',className,label);b.type='button';b.dataset.evidenceKey=JSON.stringify(selection);
+  b.setAttribute('aria-pressed','false');b.onclick=()=>onSelect(selection);return b;
+}
+function aDirections(m,onSelect) {
   const root=aEl('div','direction-bars');
   for(const [key,label]of [['horizontal','水平'],['vertical','垂直'],['diagonal','斜向']]) {
-    const row=aEl('div','direction-row'),track=aEl('span','direction-track'),bar=aEl('i');
-    bar.style.width=aPct(m.directions[key])+'%';track.append(bar);row.append(aEl('span','',label),track,aEl('span','',aPct(m.directions[key])+'%'));root.append(row);
+    const row=aEvidenceButton('',{kind:'lines',direction:key},onSelect,'direction-row');
+    row.setAttribute('aria-label','高亮'+label+'边缘候选');
+    const track=aEl('span','direction-track'),bar=aEl('i');bar.style.width=aPct(m.directions[key])+'%';
+    track.append(bar);row.append(aEl('span','',label),track,aEl('span','',aPct(m.directions[key])+'%'));root.append(row);
   }
   return root;
 }
-function aPalette(m) {
+function aPalette(m,onSelect) {
   const root=aEl('div','palette');
-  m.palette.forEach(c=>{const item=aEl('div','palette-item'),swatch=aEl('span','swatch');swatch.style.backgroundColor=c.hex;swatch.setAttribute('role','img');swatch.setAttribute('aria-label',c.hex);item.append(swatch,aEl('span','',c.hex.toUpperCase()),aEl('span','',aPct(c.share)+'%'));root.append(item);});return root;
+  m.palette.forEach((c,index)=>{
+    const item=aEvidenceButton('',{kind:'color',index},onSelect,'palette-item'),swatch=aEl('span','swatch');
+    item.setAttribute('aria-label',`高亮主色 ${c.hex.toUpperCase()}，约 ${aPct(c.share)}%`);
+    swatch.style.backgroundColor=c.hex;swatch.setAttribute('aria-hidden','true');
+    item.append(swatch,aEl('span','',c.hex.toUpperCase()),aEl('span','',aPct(c.share)+'%'));root.append(item);
+  });return root;
 }
 function aBalance(m) {
   const root=aEl('div','balance-graphic');
@@ -375,6 +422,7 @@ function aReferenceDiagram(kind) {
 function createAestheticsPanel({getImage,getCrop,getIntent,getAI,isAIAvailable,onAI}) {
   const id=s=>document.getElementById(s);
   let originalImage=null,originalMetrics=null,lastKey='',pending=false;
+  let activeMetrics=null,activeRect=null,lastGeometry='',selection=null,evidenceNotice='';
   function measure(image,r) {
     const w=image.width*r.w,h=image.height*r.h,scale=Math.min(1,192/Math.max(w,h)),c=document.createElement('canvas');
     c.width=Math.max(1,Math.round(w*scale));c.height=Math.max(1,Math.round(h*scale));
@@ -385,6 +433,67 @@ function createAestheticsPanel({getImage,getCrop,getIntent,getAI,isAIAvailable,o
     const kind=id('referenceElement').value,r=AESTHETIC_REFERENCES[kind];
     id('referenceDiagram').replaceChildren(aReferenceDiagram(kind));
     id('referencePrinciple').textContent=r.principle;id('referenceObserve').textContent=r.observe;id('referenceExercise').textContent=r.exercise;id('referenceBoundary').textContent=r.boundary;
+  }
+  const selectionKey=value=>JSON.stringify(value);
+  function syncEvidenceButtons() {
+    id('aestheticCards').querySelectorAll('[data-evidence-key]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.evidenceKey===selectionKey(selection))));
+    id('aestheticCards').querySelectorAll('[data-element]').forEach(card=>{
+      const element=selection?.kind==='quiet'?'balance':selection?.kind;
+      card.classList.toggle('is-evidence-active',element===card.dataset.element);
+    });
+  }
+  function selectEvidence(next) {
+    selection=selectionKey(selection)===selectionKey(next)?null:next;evidenceNotice='';
+    id('evidenceToggle').checked=true;
+    if(selection){id('referenceElement').value=selection.kind==='quiet'?'space':selection.kind;reference();}
+    syncEvidenceButtons();renderEvidence();
+    id('evidenceCanvas').closest('section').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+  function evidencePresentation() {
+    const colors=['#e9bd66','#79cddd','#d799be'];
+    if(!selection)return {title:'点击上方的色块或“查看照片依据”',description:evidenceNotice||'直接在这张照片上核对观察所依据的区域。',legend:[]};
+    if(selection.kind==='color')return {title:'主色区域 '+activeMetrics.palette[selection.index].hex.toUpperCase(),description:'保留这一主色组的自然颜色，淡化其他区域，方便观察它在画面中的分布。',legend:[{label:'所选主色组',color:activeMetrics.palette[selection.index].hex}],colors};
+    if(selection.kind==='light')return {title:selection.tone==='bright'?'亮区位置':selection.tone==='dark'?'暗区位置':'亮区与暗区位置',description:'亮区和暗区使用与统计相同的阈值。它们不等同于过曝或欠曝。',legend:[...(selection.tone!=='dark'?[{label:'亮区',color:colors[0]}]:[]),...(selection.tone!=='bright'?[{label:'暗区',color:colors[1]}]:[])],colors};
+    if(selection.kind==='lines'){
+      const groups=[['horizontal','水平',colors[0]],['vertical','垂直',colors[1]],['diagonal','斜向',colors[2]]];
+      return {title:'边缘候选位置',description:'这里只标记明显边缘及其方向，不代表已识别出道路或引导线。方向条按边缘强度加权，高亮覆盖率按像素计算。',legend:groups.filter(([key])=>selection.direction==='all'||selection.direction===key).map(([,label,color])=>({label:label+'边缘',color})),colors};
+    }
+    if(selection.kind==='quiet')return {title:'低纹理区域候选',description:'淡绿色区域对应亮度变化和边缘都较少的采样网格。它们可能是留白、墙面或虚化区域，需要你结合内容确认。',legend:[{label:'低纹理网格',color:'#b5d59d'}],colors:['#b5d59d']};
+    return {title:'左右亮度取样分区',description:'按当前分析画面的中央线分为左右两半，方便核对平均亮度差；这个分区不能说明完整视觉重量。',legend:[{label:'左半边',color:colors[0]},{label:'右半边',color:colors[1]}],colors};
+  }
+  function renderEvidence() {
+    if(!activeMetrics||!originalImage)return;
+    const canvas=id('evidenceCanvas'),context=canvas.getContext('2d'),r=activeRect;
+    const w=originalImage.width*r.w,h=originalImage.height*r.h,scale=Math.min(1,960/w,430/h);
+    canvas.width=Math.max(1,Math.round(w*scale));canvas.height=Math.max(1,Math.round(h*scale));
+    context.fillStyle='#fff';context.fillRect(0,0,canvas.width,canvas.height);
+    context.drawImage(originalImage,r.x*originalImage.width,r.y*originalImage.height,w,h,0,0,canvas.width,canvas.height);
+    const scope=id('aestheticRange').value==='original'?'原图':'当前裁剪';
+    const presentation=evidencePresentation(),result=makeEvidenceMask(activeMetrics,selection);
+    const enabled=!!selection&&id('evidenceToggle').checked;
+    if(enabled&&result.count) {
+      const layer=document.createElement('canvas');layer.width=result.width;layer.height=result.height;
+      const lc=layer.getContext('2d'),rgba=lc.createImageData(layer.width,layer.height);
+      const colors=(presentation.colors||[]).map(hex=>[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)));
+      const selectedColor=selection.kind==='color'?activeMetrics.palette[selection.index].hex:null;
+      const fadeToWhite=selectedColor&&[1,3,5].map(i=>parseInt(selectedColor.slice(i,i+2),16)).reduce((sum,v)=>sum+v,0)/3<128;
+      for(let i=0;i<result.mask.length;i++) {
+        const group=result.mask[i],offset=i*4;
+        if(!group){rgba.data.set(fadeToWhite?[255,255,255,165]:[0,0,0,150],offset);continue;}
+        if(selection.kind==='color')continue;
+        const rgb=colors[group-1]||colors[0];
+        const alpha=selection.kind==='lines'?235:selection.kind==='balance'?55:selection.kind==='quiet'?95:135;
+        rgba.data.set([...rgb,alpha],offset);
+      }
+      lc.putImageData(rgba,0,0);context.imageSmoothingEnabled=false;context.drawImage(layer,0,0,canvas.width,canvas.height);context.imageSmoothingEnabled=true;
+      if(selection.kind==='balance') {context.strokeStyle='#fff';context.lineWidth=2;context.setLineDash([7,5]);context.beginPath();context.moveTo(canvas.width/2,0);context.lineTo(canvas.width/2,canvas.height);context.stroke();}
+    }
+    id('evidenceScope').textContent=scope;id('evidenceTitle').textContent=presentation.title;id('evidenceDescription').textContent=presentation.description;
+    id('evidenceLegend').replaceChildren(...presentation.legend.map(item=>{const el=aEl('span'),swatch=aEl('i');swatch.style.backgroundColor=item.color;el.append(swatch,document.createTextNode(item.label));return el;}));
+    id('evidenceCount').textContent=!selection?'尚未选择高亮。':!enabled?'高亮已隐藏，正在查看自然画面。':!result.count?'当前范围没有符合该条件的区域，保留原图供观察。':`高亮覆盖采样画面约 ${aPct(result.count/result.mask.length)}%。`;
+    id('evidenceClear').disabled=!selection;id('evidenceToggle').disabled=!selection;
+    canvas.setAttribute('aria-label',scope+'：'+presentation.title+'。'+id('evidenceCount').textContent);
+    canvas.dataset.evidenceKind=selection?.kind||'none';canvas.dataset.highlightCount=String(result.count);
   }
   function renderAI() {
     const ai=getAI();id('aestheticAIButton').disabled=!isAIAvailable()||id('aiBtn').disabled;
@@ -398,27 +507,40 @@ function createAestheticsPanel({getImage,getCrop,getIntent,getAI,isAIAvailable,o
   }
   function render() {
     const image=getImage();if(!image)return;
-    if(image!==originalImage){originalImage=image;originalMetrics=measure(image,{x:0,y:0,w:1,h:1});lastKey='';}
+    if(image!==originalImage){originalImage=image;originalMetrics=measure(image,{x:0,y:0,w:1,h:1});lastKey='';lastGeometry='';selection=null;evidenceNotice='';}
     const range=id('aestheticRange').value,r=range==='original'?{x:0,y:0,w:1,h:1}:getCrop();
-    const key=JSON.stringify([range,r.x,r.y,r.w,r.h,getIntent()]);
+    const geometry=JSON.stringify([range,r.x,r.y,r.w,r.h]);
+    if(geometry!==lastGeometry&&selection?.kind==='color'){selection=null;evidenceNotice='取景范围已变化，请重新选择主色色块。';}
+    lastGeometry=geometry;
+    const key=JSON.stringify([geometry,getIntent()]);
     if(key!==lastKey) {
       lastKey=key;
       const m=range==='original'||(r.x===0&&r.y===0&&r.w===1&&r.h===1)?originalMetrics:measure(image,r);
+      activeMetrics=m;activeRect={x:r.x,y:r.y,w:r.w,h:r.h};
       id('aestheticScope').textContent=range==='original'?'观察原图':'跟随当前裁剪';
       id('aestheticCards').replaceChildren(...describeAesthetics(m,getIntent()).map(card=>{
         const el=aEl('article','aesthetic-card');el.dataset.element=card.element;
         el.append(aEl('span','small-label',AESTHETIC_REFERENCES[card.element].label),aEl('h3','',card.title));
-        el.append(card.element==='color'?aPalette(m):card.element==='light'?aHistogram(m):card.element==='lines'?aDirections(m):aBalance(m));
+        el.append(card.element==='color'?aPalette(m,selectEvidence):card.element==='light'?aHistogram(m):card.element==='lines'?aDirections(m,selectEvidence):aBalance(m));
+        const defaults={color:{kind:'color',index:0},light:{kind:'light',tone:'both'},lines:{kind:'lines',direction:'all'},balance:{kind:'balance'}};
+        const choice=defaults[card.element];
+        const actions=aEl('div','evidence-actions');actions.append(aEvidenceButton('查看照片依据',choice,selectEvidence));
+        if(card.element==='light'){actions.append(aEvidenceButton('仅亮区',{kind:'light',tone:'bright'},selectEvidence),aEvidenceButton('仅暗区',{kind:'light',tone:'dark'},selectEvidence));}
+        if(card.element==='balance')actions.append(aEvidenceButton('低纹理区域',{kind:'quiet'},selectEvidence));
+        el.append(actions);
+        el.onclick=e=>{if(!e.target.closest('button,a,input,select')&&!window.getSelection()?.toString())selectEvidence(choice);};
         el.append(aEl('p','metric-evidence',card.evidence),aEl('p','metric-exercise',card.exercise));
         const learn=aEl('button','text-button','查看原理与练习 ↗');learn.onclick=()=>{id('referenceElement').value=card.element;reference();id('referenceElement').focus();};el.append(learn);return el;
       }));
       const delta=(m.tonalSpread-originalMetrics.tonalSpread)*100;
       id('aestheticComparison').textContent=range==='original'?'正在观察原图。切换为“当前裁剪”可以比较裁剪带来的特征变化。':`与原图相比，当前保留面积约 ${aPct(r.w*r.h)}%；明暗跨度变化 ${delta>0?'+':''}${Math.round(delta)} 个百分点。数值变化只描述差异，优劣由表达决定。`;
     }
-    renderAI();
+    syncEvidenceButtons();renderEvidence();renderAI();
   }
   function schedule() {if(!pending){pending=true;requestAnimationFrame(()=>{pending=false;render();});}}
-  id('aestheticRange').onchange=schedule;id('referenceElement').onchange=reference;
+  id('evidenceClear').onclick=()=>{selection=null;evidenceNotice='高亮已清除。';syncEvidenceButtons();renderEvidence();};
+  id('evidenceToggle').onchange=renderEvidence;
+  id('aestheticRange').onchange=()=>{selection=null;evidenceNotice='分析范围已切换，请重新选择高亮。';schedule();};id('referenceElement').onchange=reference;
   id('aestheticAIButton').onclick=onAI;reference();
   return {schedule};
 }

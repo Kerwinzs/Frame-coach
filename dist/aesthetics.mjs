@@ -9,7 +9,7 @@ function extractPalette(pixels, count=5) {
     const b=buckets.get(key)||{sum:[0,0,0],n:0};
     b.n++;for(let c=0;c<3;c++)b.sum[c]+=rgb[c];buckets.set(key,b);
   }
-  const bins=[...buckets.values()].map(b=>({rgb:b.sum.map(v=>v/b.n),n:b.n})).sort((a,b)=>b.n-a.n);
+  const bins=[...buckets.entries()].map(([key,b])=>({key,rgb:b.sum.map(v=>v/b.n),n:b.n})).sort((a,b)=>b.n-a.n);
   const centers=[bins[0].rgb];
   while(centers.length<Math.min(count,bins.length)) {
     let candidate=null,best=0;
@@ -26,17 +26,22 @@ function extractPalette(pixels, count=5) {
     for(const b of bins) {
       let nearest=0,best=Infinity;
       centers.forEach((c,i)=>{const d=colorDistance(c,b.rgb);if(d<best){best=d;nearest=i;}});
-      const group=clusters[nearest];group.n+=b.n;
+      b.cluster=nearest;const group=clusters[nearest];group.n+=b.n;
       for(let c=0;c<3;c++)group.sum[c]+=b.rgb[c]*b.n;
     }
     clusters.forEach((g,i)=>{if(g.n)centers[i]=g.sum.map(v=>v/g.n);});
   }
-  return clusters.map((g,i)=>({hex:toHex(centers[i]),share:g.n/pixels.length})).filter(c=>c.share>0).sort((a,b)=>b.share-a.share);
+  const sorted=clusters.map((g,i)=>({cluster:i,hex:toHex(centers[i]),share:g.n/pixels.length})).filter(c=>c.share>0).sort((a,b)=>b.share-a.share);
+  const order=new Map(sorted.map((c,i)=>[c.cluster,i]));
+  const bucketLabels=new Map(bins.map(b=>[b.key,order.get(b.cluster)]));
+  const labels=Uint8Array.from(pixels,rgb=>bucketLabels.get((rgb[0]>>4)*256+(rgb[1]>>4)*16+(rgb[2]>>4)));
+  return {palette:sorted.map(({hex,share})=>({hex,share})),labels};
 }
 
 export function analyzeAesthetics(data,width,height) {
   if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||!data||data.length<width*height*4)throw new TypeError('Invalid image pixels');
   const n=width*height,light=new Float32Array(n),edges=new Float32Array(n),pixels=[];
+  const toneLabels=new Uint8Array(n),edgeLabels=new Uint8Array(n);
   const histogram=Array(16).fill(0),directions={horizontal:0,vertical:0,diagonal:0};
   let mean=0,saturation=0,bright=0,dark=0,left=0,right=0,leftN=0,rightN=0;
   for(let i=0;i<n;i++) {
@@ -44,7 +49,7 @@ export function analyzeAesthetics(data,width,height) {
     const rgb=[0,1,2].map(c=>data[i*4+c]*alpha+255*(1-alpha));pixels.push(rgb);
     const y=(rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722)/255;
     light[i]=y;mean+=y;histogram[Math.min(15,Math.floor(y*16))]++;
-    if(y>=.85)bright++;if(y<=.15)dark++;
+    if(y>=.85){bright++;toneLabels[i]=1;}if(y<=.15){dark++;toneLabels[i]=2;}
     const max=Math.max(...rgb)/255,min=Math.min(...rgb)/255;
     saturation+=max===min?0:(max-min)/(1-Math.abs(max+min-1));
     if(i%width<width/2){left+=y;leftN++;}else{right+=y;rightN++;}
@@ -59,7 +64,8 @@ export function analyzeAesthetics(data,width,height) {
     edgeCount++;energy+=mag;
     const angle=((Math.atan2(gy,gx)+Math.PI/2)%Math.PI+Math.PI)%Math.PI;
     const degrees=angle*180/Math.PI;
-    directions[degrees<22.5||degrees>=157.5?'horizontal':degrees>=67.5&&degrees<112.5?'vertical':'diagonal']+=mag;
+    const direction=degrees<22.5||degrees>=157.5?'horizontal':degrees>=67.5&&degrees<112.5?'vertical':'diagonal';
+    directions[direction]+=mag;edgeLabels[i]={horizontal:1,vertical:2,diagonal:3}[direction];
   }
   for(const key of Object.keys(directions))directions[key]=energy?directions[key]/energy:0;
   const grid=Array.from({length:64},()=>({sum:0,sq:0,edge:0,n:0}));
@@ -74,8 +80,10 @@ export function analyzeAesthetics(data,width,height) {
   });
   const quantile=q=>{let total=0;for(let i=0;i<16;i++){total+=histogram[i];if(total>=n*q)return (i+.5)/16;}return 1;};
   const dominant=Object.entries(directions).sort((a,b)=>b[1]-a[1])[0];
+  const colors=extractPalette(pixels);
   return {
-    palette:extractPalette(pixels),meanLight:mean/n,saturation:saturation/n,
+    evidence:{width,height,paletteLabels:colors.labels,toneLabels,edgeLabels},
+    palette:colors.palette,meanLight:mean/n,saturation:saturation/n,
     brightShare:bright/n,darkShare:dark/n,tonalSpread:quantile(.9)-quantile(.1),
     histogram:histogram.map(v=>v/n),directions,
     dominantDirection:energy&&dominant[1]>.46?dominant[0]:null,
@@ -124,4 +132,25 @@ export function describeAesthetics(m,intent='focus') {
       evidence:`左右平均亮度相差 ${pct(m.balanceDifference)} 个百分点；低纹理网格覆盖约 ${pct(m.quietShare)}%。`,
       exercise:intent==='symmetry'?'结合中央线检查两侧形状和内容的呼应；亮度接近并不能证明对称。':intent==='space'?'看看低纹理区域是否帮助表达安静或延伸，再决定是否保留这片空间。':'先比较两侧内容，再决定保留均衡还是有意的不均衡。'},
   ];
+}
+
+// Labels are generated from the exact sampled pixels used by the measurement.
+// 0 means unselected; positive values identify the legend groups for rendering.
+export function makeEvidenceMask(metrics,selection) {
+  const e=metrics.evidence,n=e.width*e.height,mask=new Uint8Array(n);
+  if(!selection)return {mask,count:0,width:e.width,height:e.height};
+  const edgeId={horizontal:1,vertical:2,diagonal:3};
+  for(let i=0;i<n;i++) {
+    const x=i%e.width,y=Math.floor(i/e.width);
+    if(selection.kind==='color'&&Number.isInteger(selection.index)&&selection.index>=0&&selection.index<metrics.palette.length)mask[i]=e.paletteLabels[i]===selection.index?1:0;
+    else if(selection.kind==='light') {
+      const v=e.toneLabels[i];
+      mask[i]=selection.tone==='both'||selection.tone==='bright'&&v===1||selection.tone==='dark'&&v===2?v:0;
+    } else if(selection.kind==='lines') {
+      const v=e.edgeLabels[i];mask[i]=selection.direction==='all'||v===edgeId[selection.direction]?v:0;
+    } else if(selection.kind==='balance')mask[i]=x<e.width/2?1:2;
+    else if(selection.kind==='quiet')mask[i]=metrics.textureGrid[Math.min(7,Math.floor(y/e.height*8))*8+Math.min(7,Math.floor(x/e.width*8))]?1:0;
+  }
+  let count=0;for(const v of mask)if(v)count++;
+  return {mask,count,width:e.width,height:e.height};
 }
