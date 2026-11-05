@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: '24'
       - name: Test composition geometry and local analysis
-        run: node --test tests/core.test.mjs
+        run: node --test tests/*.test.mjs
       - name: Test AI request handling with mocks
         run: python3 -m unittest discover -s tests -p 'test_*.py'
       - name: Check Python and JavaScript syntax
@@ -29,6 +29,8 @@ jobs:
           python3 -m py_compile server.py launch.py build_standalone.py
           node --check dist/app.js
           node --check dist/core.mjs
+          node --check dist/aesthetics.mjs
+          node --check dist/aesthetics-view.mjs
           bash -n 启动.command 启用AI.command
       - name: Verify offline version matches source
         run: |

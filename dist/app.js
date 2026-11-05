@@ -1,4 +1,5 @@
 import {clamp,normalizeSubject,findCrop,localAnalyze,makeTips,INTENTS,containsSubject,fitCrop,moveCrop,resizeCrop} from './core.mjs';
+import {createAestheticsPanel} from './aesthetics-view.mjs';
 const $ = id => document.getElementById(id);
 const state = {
   image:null, subject:null, horizon:null, gaze:'unknown', ratio:'original',
@@ -6,6 +7,7 @@ const state = {
   view:'guide', mode:'local', source:'', ai:null, interaction:null, drag:null,
   revision:0, loadId:0, busy:false, controller:null, subjectManual:false, subjectOrigin:'demo',
 };
+let aestheticsPanel;
 const canvas = $('mainCanvas'), ctx = canvas.getContext('2d');
 const say = text => { $('notice').textContent=text; $('notice').hidden=!text; };
 const rectOnly = r => r ? {x:r.x,y:r.y,w:r.w,h:r.h} : null;
@@ -20,7 +22,7 @@ function crop() {
 }
 function cancelAI() {
   state.controller?.abort(); state.controller=null; state.busy=false; state.revision++;
-  $('aiBtn').disabled=false; $('aiBtn').textContent='✦ 用 AI 再看一眼';
+  $('aiBtn').disabled=false; $('aiBtn').textContent='✦ 用 AI 再看一眼';aestheticsPanel?.schedule();
 }
 function adjusted() {
   cancelAI(); state.ai=null; state.mode='local';
@@ -111,7 +113,7 @@ function render() {
     $(prefix+suffix).value=Math.round(rect[key]*10000)/100;
   }
   $('gaze').value=state.gaze;$('ratio').value=state.ratio;
-  draw();
+  draw();aestheticsPanel?.schedule();
 }
 function cancelDrag() {
   if(state.drag?.kind==='crop')restore(state.drag.before);
@@ -271,13 +273,13 @@ async function checkAI() {
     const r=await fetch('/api/config');if(!r.ok)throw Error();const c=await r.json();aiAvailable=c.aiAvailable;
     $('aiStatus').textContent=aiAvailable?`已连接 ${c.model}。点击后发送压缩照片进行分析。`:'尚未配置 AI 密钥，当前可完整使用本地构图辅助。';
     $('privacy').textContent=aiAvailable?'仅点击 AI 按钮时发送照片到 OpenAI；本地服务器不保存照片。':'本地模式下，照片仅在浏览器内处理。';
-  }catch{$('aiStatus').textContent='当前为静态预览。启动本地服务后可配置 AI 分析。';}
+  }catch{$('aiStatus').textContent='当前为静态预览。启动本地服务后可配置 AI 分析。';}finally{aestheticsPanel?.schedule();}
 }
 $('aiBtn').onclick=async()=>{
   if(!aiAvailable){say('AI 尚未配置。可先使用拍摄意图、手动裁剪和对比；AI 启用方法见项目里的 README。');return;}
   if(!state.image||state.busy)return;
   setInteraction(null);cancelAI();state.busy=true;state.controller=new AbortController();const controller=state.controller,revision=state.revision;
-  $('aiBtn').disabled=true;$('aiBtn').textContent='✦ 正在观察这张照片…';say('');
+  $('aiBtn').disabled=true;$('aiBtn').textContent='✦ 正在观察这张照片…';say('');aestheticsPanel?.schedule();
   const timer=setTimeout(()=>controller.abort(),85000);
   try {
     const image=scaledCanvas(state.image,1400).toDataURL('image/jpeg',.85);
@@ -285,6 +287,7 @@ $('aiBtn').onclick=async()=>{
     const data=await response.json();if(!response.ok)throw Error(data.error||'AI 分析失败');if(revision!==state.revision)return;
     state.subjectOrigin='ai';state.subject=data.subject;state.horizon=data.horizon;state.gaze=data.gaze;state.ai=data;state.mode='ai';state.source='基于照片内容';render();
   } catch(e) {if(revision===state.revision)say(e.name==='AbortError'?'AI 请求超时，请稍后再试。你仍可使用本地构图辅助。':e.message);}
-  finally {clearTimeout(timer);if(revision===state.revision){state.busy=false;state.controller=null;$('aiBtn').disabled=false;$('aiBtn').textContent='✦ 用 AI 再看一眼';}}
+  finally {clearTimeout(timer);if(revision===state.revision){state.busy=false;state.controller=null;$('aiBtn').disabled=false;$('aiBtn').textContent='✦ 用 AI 再看一眼';aestheticsPanel?.schedule();}}
 };
+aestheticsPanel=createAestheticsPanel({getImage:()=>state.image,getCrop:crop,getIntent:()=>state.intent,getAI:()=>state.ai,isAIAvailable:()=>aiAvailable,onAI:()=>$('aiBtn').click()});
 await Promise.all([loadImage('./demo.jpg','湖边的木屋 · 示例照片',true),checkAI()]);

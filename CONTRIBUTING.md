@@ -13,7 +13,7 @@ python3 launch.py
 ## 修改后的检查
 
 ```sh
-node --test tests/core.test.mjs
+node --test tests/*.test.mjs
 python3 -m unittest discover -s tests -p 'test_*.py'
 python3 -m py_compile server.py launch.py build_standalone.py
 python3 build_standalone.py
@@ -30,9 +30,13 @@ python3 build_standalone.py
 | 页面结构 / 样式 | `dist/index.html`、`dist/style.css` |
 | 上传、标注、状态和导出 | `dist/app.js` |
 | 裁剪、留白、本地焦点估计 | `dist/core.mjs` |
+| 美学特征测量与参考练习 | `dist/aesthetics.mjs` |
+| 美学卡片、示意图与解读展示 | `dist/aesthetics-view.mjs` |
 | AI 提示词、结构化输出、数据校验 | `server.py` |
 | 启动流程 | `launch.py` |
 
 优先用自己的照片记录一个明确问题，再修改对应逻辑。建议提交信息说明“什么情况下发生什么问题、修改后会怎样”，并写出已完成的验证。
 
 示例照片和预览图可留在仓库中。个人上传照片、密钥、导出结果和缓存不要提交。
+
+修改美学模块时，保持“可测量特征”“教学示意”和“AI 场景解读”的区分。不要把统计值包装成美感分数，也不要把边缘方向当成已识别的引导线。测量方法与阈值变更需同步更新 `docs/aesthetics.md`。

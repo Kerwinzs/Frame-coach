@@ -25,11 +25,15 @@ def obj(properties):
 NUM = {'type': 'number'}
 CONFIDENCE = {'type': 'string', 'enum': ['low', 'medium', 'high']}
 SUBJECT = obj(dict(x=NUM, y=NUM, w=NUM, h=NUM, label={'type': 'string'}, confidence=CONFIDENCE))
+AESTHETIC_ELEMENT = {'type': 'string', 'enum': ['color', 'light', 'lines', 'balance', 'space']}
+AESTHETIC_OBSERVATION = obj({'element': AESTHETIC_ELEMENT, 'observation': {'type': 'string'},
+    'evidence': {'type': 'string'}, 'exercise': {'type': 'string'}, 'confidence': CONFIDENCE})
 SCHEMA = obj({
     'subject': SUBJECT,
     'horizon': {'anyOf': [obj(dict(y=NUM, angle=NUM, confidence=CONFIDENCE)), {'type': 'null'}]},
     'gaze': {'type': 'string', 'enum': ['left', 'right', 'none', 'unknown']},
     'summary': {'type': 'string'},
+    'aesthetics': {'type': 'array', 'minItems': 2, 'maxItems': 3, 'items': AESTHETIC_OBSERVATION},
     'tips': {'type': 'array', 'minItems': 2, 'maxItems': 2,
              'items': obj({'title': {'type': 'string'}, 'body': {'type': 'string'}})},
 })
@@ -42,6 +46,7 @@ gaze 仅在人或动物视线、明确运动方向时判断 left/right；静物�
 用户拍摄意图 user_intent：focus 突出主体；environment 表现环境，优先保留场景关系；symmetry 强调居中，避免强迫使用三分法；space 保留留白，避免一律收紧画面。建议应服务于用户意图。
 summary 用 1–2 句描述可见主体、位置、背景和空间关系，约 60 字。
 只给出两条下次拍摄可做的不同调整，每条 title 简短、body 包含可观察的问题、具体动作与理由。涵盖视线/留白/水平线或背景干扰，按照片实际内容选择。不要重复自动生成的裁剪建议。
+aesthetics 从 color 色彩呼应、light 明暗层次、lines 线条节奏、balance 视觉均衡、space 留白中选 2–3 个在原图中有依据的元素，element 不重复。每项 observation 简短解释画面中的元素，evidence 具体描述可见位置、颜色、线条或空间关系，exercise 给一个符合用户拍摄意图的下一次拍摄练习，confidence 如实反映把握。不要把“色彩丰富”“左右相同”“留白多”等特征直接等同于美，不输出审美分数。不能确认的元素不强行声称存在。
 不要编造距离、焦距、步数、不可见场景、画外空间；机位建议用“尝试…，观察…是否…”表述，不能承诺移动后一定可见什么。不要为没有问题的照片强行找问题。'''
 
 
@@ -76,6 +81,16 @@ def validate_result(data):
     for t in tips:
         if not isinstance(t, dict) or any(not isinstance(t.get(k), str) or not 1 <= len(t[k]) <= 1200 for k in ('title', 'body')):
             raise ValueError('AI 建议内容无效，请重试。')
+    observations = data.get('aesthetics')
+    if not isinstance(observations, list) or not 2 <= len(observations) <= 3:
+        raise ValueError('AI 美学解读不完整，请重试。')
+    seen = set()
+    for item in observations:
+        if not isinstance(item, dict) or item.get('element') not in AESTHETIC_ELEMENT['enum'] or item['element'] in seen:
+            raise ValueError('AI 美学元素无效或重复，请重试。')
+        seen.add(item['element'])
+        if item.get('confidence') not in ('low', 'medium', 'high') or any(not isinstance(item.get(k), str) or not item[k].strip() or len(item[k]) > 800 for k in ('observation', 'evidence', 'exercise')):
+            raise ValueError('AI 美学解读缺少可核对的依据或练习，请重试。')
     return data
 
 
@@ -104,7 +119,7 @@ def analyze(payload):
     if not key:
         return 503, {'error': '尚未配置 AI 密钥，当前可以使用本地构图辅助。'}
     context = {'user_intent': intent, 'user_direction': gaze, 'user_subject_bounds': {k: subject[k] for k in ('x', 'y', 'w', 'h')} if subject else None}
-    body = {'model': MODEL, 'store': False, 'max_output_tokens': 2500, 'instructions': INSTRUCTIONS,
+    body = {'model': MODEL, 'store': False, 'max_output_tokens': 4000, 'instructions': INSTRUCTIONS,
             'input': [{'role': 'user', 'content': [
                 {'type': 'input_text', 'text': '请分析这张照片。用户设置：' + json.dumps(context, ensure_ascii=False)},
                 {'type': 'input_image', 'image_url': image, 'detail': 'high'}]}],
@@ -170,7 +185,7 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path == '/api/config':
             return self.send_json(200, {'aiAvailable': bool(os.environ.get('OPENAI_API_KEY', '').strip()), 'model': MODEL})
         # Explicit allowlist: no directory listing, source files, or symlink traversal.
-        if self.path.split('?', 1)[0] not in ('/', '/index.html', '/app.js', '/core.mjs', '/style.css', '/demo.jpg'):
+        if self.path.split('?', 1)[0] not in ('/', '/index.html', '/app.js', '/core.mjs', '/aesthetics.mjs', '/aesthetics-view.mjs', '/style.css', '/demo.jpg'):
             return self.send_json(404, {'error': '找不到该资源。'})
         if self.path.split('?', 1)[0].endswith('.mjs'):
             self.extensions_map['.mjs'] = 'text/javascript'
@@ -180,7 +195,7 @@ class Handler(SimpleHTTPRequestHandler):
         if not self.allowed():
             self.send_response(403)
             return self.end_headers()
-        if self.path.split('?', 1)[0] not in ('/', '/index.html', '/app.js', '/core.mjs', '/style.css', '/demo.jpg'):
+        if self.path.split('?', 1)[0] not in ('/', '/index.html', '/app.js', '/core.mjs', '/aesthetics.mjs', '/aesthetics-view.mjs', '/style.css', '/demo.jpg'):
             self.send_response(404)
             return self.end_headers()
         return super().do_HEAD()

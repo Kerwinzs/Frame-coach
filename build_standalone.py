@@ -5,8 +5,11 @@ from pathlib import Path
 root = Path(__file__).resolve().parent
 html = (root / 'dist/index.html').read_text()
 css = (root / 'dist/style.css').read_text()
-core = (root / 'dist/core.mjs').read_text().replace('export ', '')
-app = (root / 'dist/app.js').read_text().split('\n', 1)[1]
+modules = ['core.mjs', 'aesthetics.mjs', 'aesthetics-view.mjs']
+def inline_source(name):
+    return '\n'.join(line for line in (root / 'dist' / name).read_text().splitlines() if not line.startswith('import ')).replace('export ', '')
+core = '\n'.join(inline_source(name) for name in modules)
+app = inline_source('app.js')
 photo = 'data:image/jpeg;base64,' + base64.b64encode((root / 'dist/demo.jpg').read_bytes()).decode()
 app = app.replace("'./demo.jpg'", repr(photo))
 app = app.replace("await Promise.all([loadImage(" + repr(photo) + ",'湖边的木屋 · 示例照片',true),checkAI()]);",

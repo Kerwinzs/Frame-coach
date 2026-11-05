@@ -6,9 +6,9 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="header"><a class="brand" href="./" aria-label="留白首页"><span class="brand-icon">⌗</span><strong>留白</strong><span class="brand-en">FRAME COACH</span></a><span class="header-note">看见画面，也看见下一种可能。</span><span class="version">LOCAL / 02</span></header>
+<header class="header"><a class="brand" href="./" aria-label="留白首页"><span class="brand-icon">⌗</span><strong>留白</strong><span class="brand-en">FRAME COACH</span></a><span class="header-note">看见画面，也看见下一种可能。</span><span class="version">LOCAL / 03</span></header>
 <main>
-<section class="intro"><div><div class="eyebrow">A LITTLE SPACE. A BETTER FRAME.</div><h1>让每一次取景，<span>更有想法。</span></h1><p>放入一张照片，找到主体、安排留白，再试一种构图。</p></div><button id="uploadTop" class="primary"><span>＋</span> 选择你的照片</button></section>
+<section class="intro"><div><div class="eyebrow">A LITTLE SPACE. A BETTER FRAME.</div><h1>让每一次取景，<span>更有想法。</span></h1><p>放入一张照片，练习构图，也看见色彩、光线与空间。</p></div><div class="intro-actions"><button id="uploadTop" class="primary"><span>＋</span> 选择你的照片</button><a class="text-button" href="#aestheticTitle">美学参考 ↓</a></div></section>
 <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" hidden>
 <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
 <div class="workspace">
@@ -22,6 +22,14 @@
 </section>
 <aside class="coach" aria-label="构图建议"><div class="coach-heading"><div class="eyebrow">YOUR NEXT SHOT</div><h2>再拍一张，可以这样。</h2><p>先试一个调整，再决定是否保留。</p></div><div class="mode-line"><span id="modeBadge" class="mode-badge">本地构图辅助</span><span id="sourceLabel">示例已标注</span></div><div class="observation"><span class="small-label">画面观察</span><p id="summary"></p><span id="confidence" class="muted"></span></div><ol id="tips" class="tips"></ol><div class="ai-area"><button id="aiBtn" class="primary full">✦ 用 AI 再看一眼</button><p id="aiStatus">正在检查 AI 连接…</p><p class="privacy" id="privacy">本地模式下，照片仅在浏览器内处理。</p></div></aside>
 </div>
+<section class="aesthetics-module" aria-labelledby="aestheticTitle">
+<div class="aesthetic-header"><div><div class="eyebrow">LEARN TO SEE</div><h2 id="aestheticTitle">美学参考：看见画面的组织方式。</h2><p>从照片中的颜色、明暗和边缘出发，选择一个元素练习。</p></div><label for="aestheticRange">分析范围<select id="aestheticRange"><option value="crop">当前裁剪</option><option value="original">原图</option></select></label></div>
+<div class="aesthetic-caption"><span class="mode-badge">本地特征分析</span><span id="aestheticScope" aria-live="polite">跟随当前裁剪</span><span>这些指标描述画面，不是审美评分。</span></div>
+<div id="aestheticCards" class="aesthetic-cards"></div><p id="aestheticComparison" class="aesthetic-comparison" aria-live="polite"></p>
+<div class="reference-lab"><div class="reference-visual"><div id="referenceDiagram"></div><span>原理示意 · 不是照片识别结果</span></div><div class="reference-copy"><label for="referenceElement">选择一个美学元素深入观察</label><select id="referenceElement"><option value="color">色彩呼应</option><option value="light">明暗层次</option><option value="lines">线条节奏</option><option value="balance">视觉均衡</option><option value="space">简洁与留白</option></select><p id="referencePrinciple" class="reference-principle"></p><p><strong>怎么看</strong><span id="referenceObserve"></span></p><p><strong>下一次拍摄</strong><span id="referenceExercise"></span></p><p id="referenceBoundary" class="reference-boundary"></p></div></div>
+<div class="aesthetic-ai"><div class="aesthetic-ai-heading"><div><h3>AI 美学解读</h3><p>基于原图内容，补充可核对的依据与拍摄练习。</p></div><button id="aestheticAIButton" class="outline">✦ AI 解读美学元素</button></div><p id="aestheticAIEmpty" class="aesthetic-ai-empty"></p><div id="aestheticAIResults" class="ai-aesthetic-results"></div></div>
+<details class="aesthetic-method"><summary>这些参考从哪里来？有什么边界？</summary><p>本地计算包括主色聚类、近似亮度分布、边缘方向、左右平均亮度差和低纹理网格覆盖率。它们提供观察线索，不能完整感知情绪、叙事或个人审美。分析的是缩小后的画面，数值是近似值。</p><p>研究参考：<a href="https://arxiv.org/abs/1606.01621" target="_blank" rel="noopener">AADB 摄影属性研究</a>提供了按属性讨论审美的思路；<a href="https://research.google/pubs/nima-neural-image-assessment/" target="_blank" rel="noopener">NIMA</a>研究了人的评分分布。本项目未加载这两个研究的模型或数据集，本地规则和阈值没有经过审美数据集标定。</p><p>原理图为本项目绘制的教学示意。AI 仅在点击时发送原图的压缩版本；模型的把握程度是自报描述，不是经校准的准确率。</p></details>
+</section>
 <footer><span>构图是一种选择，没有唯一正确答案。</span><span>示例来自 <a href="https://images.unsplash.com/photo-1470770841072-f978cf4d019e" target="_blank" rel="noopener">Unsplash</a> · <button id="helpBtn" class="text-button">关于这个原型</button></span></footer>
 <dialog id="helpDialog"><button id="closeHelp" class="dialog-close" aria-label="关闭">×</button><div class="eyebrow">ABOUT THIS LITTLE TOOL</div><h2>从一张照片开始练习。</h2><p>本地模式用颜色对比估计视觉焦点、用边缘估计水平线候选。它不理解人物或景物的含义，也不会自动判断视线方向。请先确认或框选主体，再看建议。</p><p>配置服务器环境变量 OPENAI_API_KEY 后，可点击 AI 按钮发送压缩照片到 OpenAI，识别主体、视线、水平线并给出场景建议。密钥只保存在服务器环境中。</p><p>选择拍摄意图后会重新生成裁剪建议。点击“调整裁剪”，在橙框内拖动移动、拖四角缩放；可解锁比例自由裁剪，撤销或恢复建议。橙色框不会修改原照片。导出的是裁剪后的 JPEG；水平线仅作标注，本版不自动旋转。</p><p>快捷操作：点击“框选主体”后，在图上拖出矩形；“标记水平线”则沿真实水平线拖动。也可以用数值输入主体范围。裁剪模式支持方向键移动、Shift + 方向键调整大小，也可以用数值精确调整。按 Esc 取消当前操作。</p><p>支持 JPEG / PNG / WebP，最大 20 MB、4000 万像素。HEIC 请先转换为 JPEG。</p></dialog>
 <script type="module" src="app.js"></script>

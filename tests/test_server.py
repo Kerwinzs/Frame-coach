@@ -14,6 +14,9 @@ PHOTO = Path(__file__).resolve().parents[1] / 'dist' / 'demo.jpg'
 def result():
     return {'subject': {'x': .5, 'y': .5, 'w': .2, 'h': .3, 'label': '木屋', 'confidence': 'high'},
             'horizon': None, 'gaze': 'none', 'summary': '木屋位于右侧。',
+            'aesthetics': [
+                {'element': 'color', 'observation': '暖色木屋与冷色环境形成区别', 'evidence': '右下方木屋偏暖，湖水和远山偏冷。', 'exercise': '下次取景保留两种颜色的邻接关系。', 'confidence': 'medium'},
+                {'element': 'space', 'observation': '湖面为木屋提供周围空间', 'evidence': '木屋左侧湖面相对平缓。', 'exercise': '比较保留湖面与收紧取景的区别。', 'confidence': 'medium'}],
             'tips': [{'title': '减少干扰', 'body': '尝试降低机位，观察树枝是否移出画面。'},
                      {'title': '保留倒影', 'body': '取景时检查底部是否保留完整倒影。'}]}
 
@@ -59,6 +62,15 @@ class ServerTests(unittest.TestCase):
         self.assertFalse(captured['store'])
         self.assertEqual(captured['input'][0]['content'][1]['type'], 'input_image')
         self.assertTrue(captured['text']['format']['strict'])
+
+    def test_aesthetic_observations_require_evidence_and_unique_elements(self):
+        for mutate in (lambda d: d.pop('aesthetics'),
+                       lambda d: d['aesthetics'][0].update(evidence=''),
+                       lambda d: d['aesthetics'][0].update(element='beauty_score'),
+                       lambda d: d['aesthetics'][1].update(element='color'),
+                       lambda d: d['aesthetics'][0].update(confidence='certain')):
+            data = result(); mutate(data)
+            with self.assertRaises(ValueError): server.validate_result(data)
 
     def test_model_refusal_remains_a_visible_error(self):
         response = {'status': 'completed', 'output': [{'content': [{'type': 'refusal', 'refusal': 'unable'}]}]}
