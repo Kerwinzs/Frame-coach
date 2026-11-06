@@ -1,4 +1,5 @@
 import {analyzeAesthetics,describeAesthetics,AESTHETIC_REFERENCES,makeEvidenceMask} from './aesthetics.mjs';
+import {analyzeSubjectContext,describeSubjectContext} from './subject-analysis.mjs';
 const aEl=(tag,className,text)=>{const el=document.createElement(tag);if(className)el.className=className;if(text!==undefined)el.textContent=text;return el;};
 const aPct=v=>Math.round(v*100);
 const aSvgNS='http://www.w3.org/2000/svg';
@@ -54,10 +55,11 @@ function aReferenceDiagram(kind) {
   }
   return svg;
 }
-export function createAestheticsPanel({getImage,getCrop,getIntent,getAI,isAIAvailable,onAI}) {
+export function createAestheticsPanel({getImage,getCrop,getIntent,getAI,isAIAvailable,onAI,getSubject=()=>({subject:null,confirmed:false}),onConfirmSubject=()=>{},onEditSubject=()=>{}}) {
   const id=s=>document.getElementById(s);
   let originalImage=null,originalMetrics=null,lastKey='',pending=false;
   let activeMetrics=null,activeRect=null,lastGeometry='',selection=null,evidenceNotice='';
+  let activeSubject=null,lastSubjectKey='';
   function measure(image,r) {
     const w=image.width*r.w,h=image.height*r.h,scale=Math.min(1,192/Math.max(w,h)),c=document.createElement('canvas');
     c.width=Math.max(1,Math.round(w*scale));c.height=Math.max(1,Math.round(h*scale));
@@ -80,13 +82,14 @@ export function createAestheticsPanel({getImage,getCrop,getIntent,getAI,isAIAvai
   function selectEvidence(next) {
     selection=selectionKey(selection)===selectionKey(next)?null:next;evidenceNotice='';
     id('evidenceToggle').checked=true;
-    if(selection){id('referenceElement').value=selection.kind==='quiet'?'space':selection.kind;reference();}
+    if(selection){const lesson=selection.kind==='quiet'?'space':selection.kind;if(AESTHETIC_REFERENCES[lesson]){id('referenceElement').value=lesson;reference();}}
     syncEvidenceButtons();renderEvidence();
     id('evidenceCanvas').closest('section').scrollIntoView({behavior:'smooth',block:'nearest'});
   }
   function evidencePresentation() {
     const colors=['#e9bd66','#79cddd','#d799be'];
     if(!selection)return {title:'点击上方的色块或“查看照片依据”',description:evidenceNotice||'直接在这张照片上核对观察所依据的区域。',legend:[]};
+    if(selection.kind==='subject')return {title:'主体框与周边取样区域',description:activeSubject?.status==='ready'?'金色是主体框内，青色是相邻的周边带。区域由矩形框划分，请核对它们是否适合这次比较。':activeSubject?.message||'请先设置主体框。',legend:[{label:getSubject().confirmed?'已确认主体框':'候选主体框',color:colors[0]},{label:'周边采样带',color:colors[1]}],colors};
     if(selection.kind==='color')return {title:'主色区域 '+activeMetrics.palette[selection.index].hex.toUpperCase(),description:'保留这一主色组的自然颜色，淡化其他区域，方便观察它在画面中的分布。',legend:[{label:'所选主色组',color:activeMetrics.palette[selection.index].hex}],colors};
     if(selection.kind==='light')return {title:selection.tone==='bright'?'亮区位置':selection.tone==='dark'?'暗区位置':'亮区与暗区位置',description:'亮区和暗区使用与统计相同的阈值。它们不等同于过曝或欠曝。',legend:[...(selection.tone!=='dark'?[{label:'亮区',color:colors[0]}]:[]),...(selection.tone!=='bright'?[{label:'暗区',color:colors[1]}]:[])],colors};
     if(selection.kind==='lines'){
@@ -104,7 +107,7 @@ export function createAestheticsPanel({getImage,getCrop,getIntent,getAI,isAIAvai
     context.fillStyle='#fff';context.fillRect(0,0,canvas.width,canvas.height);
     context.drawImage(originalImage,r.x*originalImage.width,r.y*originalImage.height,w,h,0,0,canvas.width,canvas.height);
     const scope=id('aestheticRange').value==='original'?'原图':'当前裁剪';
-    const presentation=evidencePresentation(),result=makeEvidenceMask(activeMetrics,selection);
+    const presentation=evidencePresentation(),result=selection?.kind==='subject'&&activeSubject?activeSubject:makeEvidenceMask(activeMetrics,selection);
     const enabled=!!selection&&id('evidenceToggle').checked;
     if(enabled&&result.count) {
       const layer=document.createElement('canvas');layer.width=result.width;layer.height=result.height;
@@ -117,7 +120,7 @@ export function createAestheticsPanel({getImage,getCrop,getIntent,getAI,isAIAvai
         if(!group){rgba.data.set(fadeToWhite?[255,255,255,165]:[0,0,0,150],offset);continue;}
         if(selection.kind==='color')continue;
         const rgb=colors[group-1]||colors[0];
-        const alpha=selection.kind==='lines'?235:selection.kind==='balance'?55:selection.kind==='quiet'?95:135;
+        const alpha=selection.kind==='lines'?235:selection.kind==='balance'||selection.kind==='subject'?55:selection.kind==='quiet'?95:135;
         rgba.data.set([...rgb,alpha],offset);
       }
       lc.putImageData(rgba,0,0);context.imageSmoothingEnabled=false;context.drawImage(layer,0,0,canvas.width,canvas.height);context.imageSmoothingEnabled=true;
@@ -129,6 +132,32 @@ export function createAestheticsPanel({getImage,getCrop,getIntent,getAI,isAIAvai
     id('evidenceClear').disabled=!selection;id('evidenceToggle').disabled=!selection;
     canvas.setAttribute('aria-label',scope+'：'+presentation.title+'。'+id('evidenceCount').textContent);
     canvas.dataset.evidenceKind=selection?.kind||'none';canvas.dataset.highlightCount=String(result.count);
+  }
+  function subjectValueRows(result,kind) {
+    const root=aEl('div','subject-value-rows');
+    for(const [label,region]of [['主体框',result.subject],['周边带',result.background]]){
+      const row=aEl('div','subject-value-row');row.append(aEl('span','',label));
+      if(kind==='color'){
+        const swatch=aEl('i','subject-color');swatch.style.backgroundColor=region.meanColor;swatch.setAttribute('aria-label',label+'平均色 '+region.meanColor);row.append(swatch,aEl('span','',region.meanColor.toUpperCase()));
+      }else{
+        const value=kind==='light'?region.meanLight:region.edgeShare;
+        const track=aEl('span','direction-track'),fill=aEl('i');fill.style.width=value===null?'0%':aPct(value)+'%';track.append(fill);row.append(track,aEl('span','',value===null?'不足':aPct(value)+'%'));
+      }
+      root.append(row);
+    }
+    return root;
+  }
+  function renderSubjectComparison(context) {
+    const r=activeSubject,ready=r.status==='ready'&&context.confirmed;
+    id('subjectContextSource').textContent=context.confirmed?(context.source||'主体已确认'):'主体待确认';
+    id('subjectContextScope').textContent=id('aestheticRange').value==='original'?'比较原图中的区域':'比较当前裁剪中的区域';
+    id('subjectContextConfirm').hidden=!!context.confirmed;id('subjectContextConfirm').disabled=!context.subject;
+    id('subjectContextRegions').disabled=!r.count;
+    id('subjectContextMessage').textContent=!context.confirmed?'请先核对主体框，再确认或重新框选。确认前不生成针对性的分区建议。'+(r.status==='ready'?'':r.message):r.message;
+    id('subjectContextCards').replaceChildren(...(ready?describeSubjectContext(r,getIntent()):[]).map(card=>{
+      const article=aEl('article','subject-comparison-card');article.dataset.kind=card.kind;
+      article.append(aEl('span','small-label',{light:'明暗关系',color:'颜色关系',edges:'边缘密度'}[card.kind]),aEl('h4','',card.title),subjectValueRows(r,card.kind),aEl('p','subject-comparison-evidence',card.evidence),aEl('p','subject-comparison-action','下次试一试：'+card.action));return article;
+    }));
   }
   function renderAI() {
     const ai=getAI();id('aestheticAIButton').disabled=!isAIAvailable()||id('aiBtn').disabled;
@@ -142,7 +171,7 @@ export function createAestheticsPanel({getImage,getCrop,getIntent,getAI,isAIAvai
   }
   function render() {
     const image=getImage();if(!image)return;
-    if(image!==originalImage){originalImage=image;originalMetrics=measure(image,{x:0,y:0,w:1,h:1});lastKey='';lastGeometry='';selection=null;evidenceNotice='';}
+    if(image!==originalImage){originalImage=image;originalMetrics=measure(image,{x:0,y:0,w:1,h:1});lastKey='';lastGeometry='';selection=null;evidenceNotice='';lastSubjectKey='';}
     const range=id('aestheticRange').value,r=range==='original'?{x:0,y:0,w:1,h:1}:getCrop();
     const geometry=JSON.stringify([range,r.x,r.y,r.w,r.h]);
     if(geometry!==lastGeometry&&selection?.kind==='color'){selection=null;evidenceNotice='取景范围已变化，请重新选择主色色块。';}
@@ -170,9 +199,13 @@ export function createAestheticsPanel({getImage,getCrop,getIntent,getAI,isAIAvai
       const delta=(m.tonalSpread-originalMetrics.tonalSpread)*100;
       id('aestheticComparison').textContent=range==='original'?'正在观察原图。切换为“当前裁剪”可以比较裁剪带来的特征变化。':`与原图相比，当前保留面积约 ${aPct(r.w*r.h)}%；明暗跨度变化 ${delta>0?'+':''}${Math.round(delta)} 个百分点。数值变化只描述差异，优劣由表达决定。`;
     }
+    const context=getSubject(),subjectKey=JSON.stringify([geometry,context,getIntent()]);
+    if(subjectKey!==lastSubjectKey){lastSubjectKey=subjectKey;activeSubject=analyzeSubjectContext(activeMetrics.evidence.rgba,activeMetrics.evidence.width,activeMetrics.evidence.height,context.subject,activeRect);renderSubjectComparison(context);}
     syncEvidenceButtons();renderEvidence();renderAI();
   }
   function schedule() {if(!pending){pending=true;requestAnimationFrame(()=>{pending=false;render();});}}
+  id('subjectContextConfirm').onclick=onConfirmSubject;id('subjectContextEdit').onclick=onEditSubject;
+  id('subjectContextRegions').onclick=()=>selectEvidence({kind:'subject'});
   id('evidenceClear').onclick=()=>{selection=null;evidenceNotice='高亮已清除。';syncEvidenceButtons();renderEvidence();};
   id('evidenceToggle').onchange=renderEvidence;
   id('aestheticRange').onchange=()=>{selection=null;evidenceNotice='分析范围已切换，请重新选择高亮。';schedule();};id('referenceElement').onchange=reference;

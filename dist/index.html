@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="header"><a class="brand" href="./" aria-label="留白首页"><span class="brand-icon">⌗</span><strong>留白</strong><span class="brand-en">FRAME COACH</span></a><span class="header-note">看见画面，也看见下一种可能。</span><span class="version">LOCAL / 04</span></header>
+<header class="header"><a class="brand" href="./" aria-label="留白首页"><span class="brand-icon">⌗</span><strong>留白</strong><span class="brand-en">FRAME COACH</span></a><span class="header-note">看见画面，也看见下一种可能。</span><span class="version">LOCAL / 05</span></header>
 <main>
 <section class="intro"><div><div class="eyebrow">A LITTLE SPACE. A BETTER FRAME.</div><h1>让每一次取景，<span>更有想法。</span></h1><p>放入一张照片，练习构图，也看见色彩、光线与空间。</p></div><div class="intro-actions"><button id="uploadTop" class="primary"><span>＋</span> 选择你的照片</button><a class="text-button" href="#aestheticTitle">美学参考 ↓</a></div></section>
 <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" hidden>
@@ -26,6 +26,13 @@
 <div class="aesthetic-header"><div><div class="eyebrow">LEARN TO SEE</div><h2 id="aestheticTitle">美学参考：看见画面的组织方式。</h2><p>点击观察或色块，在照片里核对依据，再选择一个元素练习。</p></div><label for="aestheticRange">分析范围<select id="aestheticRange"><option value="crop">当前裁剪</option><option value="original">原图</option></select></label></div>
 <div class="aesthetic-caption"><span class="mode-badge">本地特征分析</span><span id="aestheticScope" aria-live="polite">跟随当前裁剪</span><span>这些指标描述画面，不是审美评分。</span></div>
 <div id="aestheticCards" class="aesthetic-cards"></div><p id="aestheticComparison" class="aesthetic-comparison" aria-live="polite"></p>
+<section id="subjectContext" class="subject-context" aria-labelledby="subjectContextTitle">
+<div class="subject-context-header"><div><span class="eyebrow">SUBJECT & SURROUNDINGS</span><h3 id="subjectContextTitle">主体与周边，是什么关系？</h3></div><span id="subjectContextSource" class="mode-badge"></span></div>
+<p id="subjectContextMessage" class="subject-context-message" role="status" aria-live="polite"></p>
+<div class="subject-context-actions"><button id="subjectContextConfirm" class="outline">确认当前主体框</button><button id="subjectContextEdit" class="outline">框选或更改主体</button><button id="subjectContextRegions" class="outline">查看比较区域</button><span id="subjectContextScope" class="muted"></span></div>
+<div id="subjectContextCards" class="subject-context-cards"></div>
+<p class="subject-context-boundary">比较矩形主体框内与相邻的周边采样带；框内可能包含背景，周边带也可能包含其他物体。这些取样不等同于对象分割，统计不代表美感分数。</p>
+</section>
 <section class="evidence-inspector" aria-label="照片中的观察依据">
 <div class="evidence-header"><div><span class="eyebrow">SEE THE EVIDENCE</span><h3>在照片里核对观察。</h3></div><button id="evidenceClear" class="text-button" disabled>清除高亮</button></div>
 <div class="evidence-layout"><div class="evidence-canvas-wrap"><canvas id="evidenceCanvas" role="img" aria-label="当前分析范围的照片，尚未选择高亮"></canvas></div><div class="evidence-explanation"><span id="evidenceScope" class="mode-badge"></span><h4 id="evidenceTitle">点击上方的色块或“查看照片依据”</h4><p id="evidenceDescription">在这里查看观察对应的实际区域。</p><div id="evidenceLegend" class="evidence-legend"></div><p id="evidenceCount" class="evidence-count" role="status" aria-live="polite"></p><label class="evidence-toggle"><input id="evidenceToggle" type="checkbox" checked disabled> 显示高亮</label><p class="evidence-boundary">标注基于缩小后的采样画面，仅供核对位置；导出的裁剪图不含这些高亮。</p></div></div>

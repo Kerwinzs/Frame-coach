@@ -185,7 +185,7 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path == '/api/config':
             return self.send_json(200, {'aiAvailable': bool(os.environ.get('OPENAI_API_KEY', '').strip()), 'model': MODEL})
         # Explicit allowlist: no directory listing, source files, or symlink traversal.
-        if self.path.split('?', 1)[0] not in ('/', '/index.html', '/app.js', '/core.mjs', '/aesthetics.mjs', '/aesthetics-view.mjs', '/style.css', '/demo.jpg'):
+        if self.path.split('?', 1)[0] not in ('/', '/index.html', '/app.js', '/core.mjs', '/aesthetics.mjs', '/subject-analysis.mjs', '/aesthetics-view.mjs', '/style.css', '/demo.jpg'):
             return self.send_json(404, {'error': '找不到该资源。'})
         if self.path.split('?', 1)[0].endswith('.mjs'):
             self.extensions_map['.mjs'] = 'text/javascript'
@@ -195,7 +195,7 @@ class Handler(SimpleHTTPRequestHandler):
         if not self.allowed():
             self.send_response(403)
             return self.end_headers()
-        if self.path.split('?', 1)[0] not in ('/', '/index.html', '/app.js', '/core.mjs', '/aesthetics.mjs', '/aesthetics-view.mjs', '/style.css', '/demo.jpg'):
+        if self.path.split('?', 1)[0] not in ('/', '/index.html', '/app.js', '/core.mjs', '/aesthetics.mjs', '/subject-analysis.mjs', '/aesthetics-view.mjs', '/style.css', '/demo.jpg'):
             self.send_response(404)
             return self.end_headers()
         return super().do_HEAD()

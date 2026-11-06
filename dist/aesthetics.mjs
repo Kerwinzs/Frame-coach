@@ -82,7 +82,7 @@ export function analyzeAesthetics(data,width,height) {
   const dominant=Object.entries(directions).sort((a,b)=>b[1]-a[1])[0];
   const colors=extractPalette(pixels);
   return {
-    evidence:{width,height,paletteLabels:colors.labels,toneLabels,edgeLabels},
+    evidence:{width,height,rgba:Uint8ClampedArray.from(data).subarray(0,n*4),paletteLabels:colors.labels,toneLabels,edgeLabels},
     palette:colors.palette,meanLight:mean/n,saturation:saturation/n,
     brightShare:bright/n,darkShare:dark/n,tonalSpread:quantile(.9)-quantile(.1),
     histogram:histogram.map(v=>v/n),directions,

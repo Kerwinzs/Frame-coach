@@ -5,7 +5,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parent
 html = (root / 'dist/index.html').read_text()
 css = (root / 'dist/style.css').read_text()
-modules = ['core.mjs', 'aesthetics.mjs', 'aesthetics-view.mjs']
+modules = ['core.mjs', 'aesthetics.mjs', 'subject-analysis.mjs', 'aesthetics-view.mjs']
 def inline_source(name):
     return '\n'.join(line for line in (root / 'dist' / name).read_text().splitlines() if not line.startswith('import ')).replace('export ', '')
 core = '\n'.join(inline_source(name) for name in modules)

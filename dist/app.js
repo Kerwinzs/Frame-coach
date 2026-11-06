@@ -243,7 +243,7 @@ function readRect(prefix) {
 }
 $('applySubject').onclick=()=>{
   const r=readRect('subject');if(!r){say('主体范围需在照片内：左侧 + 宽度、顶部 + 高度均不能超过 100%。');return;}
-  state.subjectManual=true;state.subject=normalizeSubject({...r,label:'你选择的主体',confidence:'high'});say('');adjusted();
+  setInteraction(null);state.subjectManual=true;state.subject=normalizeSubject({...r,label:'你选择的主体',confidence:'high'});say('');adjusted();
 };
 $('applyCrop').onclick=()=>{
   const r=readRect('crop');if(!r){say('裁剪范围需在照片内：左侧 + 宽度、顶部 + 高度均不能超过 100%，宽高必须大于 0。');return;}
@@ -289,5 +289,5 @@ $('aiBtn').onclick=async()=>{
   } catch(e) {if(revision===state.revision)say(e.name==='AbortError'?'AI 请求超时，请稍后再试。你仍可使用本地构图辅助。':e.message);}
   finally {clearTimeout(timer);if(revision===state.revision){state.busy=false;state.controller=null;$('aiBtn').disabled=false;$('aiBtn').textContent='✦ 用 AI 再看一眼';aestheticsPanel?.schedule();}}
 };
-aestheticsPanel=createAestheticsPanel({getImage:()=>state.image,getCrop:crop,getIntent:()=>state.intent,getAI:()=>state.ai,isAIAvailable:()=>aiAvailable,onAI:()=>$('aiBtn').click()});
+aestheticsPanel=createAestheticsPanel({getImage:()=>state.image,getCrop:crop,getIntent:()=>state.intent,getAI:()=>state.ai,isAIAvailable:()=>aiAvailable,onAI:()=>$('aiBtn').click(),getSubject:()=>({subject:state.subject,confirmed:state.subjectManual||state.subjectOrigin==='demo',source:state.subjectManual?'主体已手动确认':state.subjectOrigin==='demo'?'示例主体已标注':'识别候选'}),onConfirmSubject:()=>{if(!state.subject)return;setInteraction(null);state.subjectManual=true;state.subject={...state.subject,label:'你确认的主体',confidence:'high'};say('已确认主体框，将按框内与邻近周边进行比较。');adjusted();},onEditSubject:()=>{setInteraction('subject');canvas.scrollIntoView({behavior:'smooth',block:'center'});canvas.focus({preventScroll:true});}});
 await Promise.all([loadImage('./demo.jpg','湖边的木屋 · 示例照片',true),checkAI()]);
